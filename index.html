@@ -32,7 +32,8 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
-body{font:15px/1.5 var(--sans);padding-bottom:calc(74px + env(safe-area-inset-bottom));overflow-x:hidden;border-top:4px solid var(--ink)}
+html{overflow-x:hidden}
+body{font:15px/1.5 var(--sans);padding-bottom:calc(74px + env(safe-area-inset-bottom));border-top:4px solid var(--ink)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
@@ -183,11 +184,15 @@ input.f:focus,select.f:focus,textarea.f:focus{border-bottom-color:var(--ac)}
 .page-head{display:flex;align-items:center;gap:12px;margin:12px 0 20px}
 .page-head .back{width:44px;height:44px;border:1px solid var(--line);display:grid;place-items:center;font-size:20px;flex:none}
 .page-head h2{font:700 32px/1.1 var(--serif);letter-spacing:-.02em}
+/* Retour en haut (mobile) */
+#totop{position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:45;width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--paper);display:none;place-items:center;font-size:20px;box-shadow:var(--sh)}
+#totop.show{display:grid}
 @media (prefers-reduced-motion:reduce){.sheet,.btn,.icobtn,.nb.add i,.bar>i{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<button id="totop" aria-label="Retour en haut" title="Retour en haut">↑</button>
 <div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-hidden="true"></div>
 <script>
 /* Gestion centralisée des dialogues : ouverture, focus, touche Échap, piège Tab */
@@ -202,6 +207,11 @@ function closeSheet(){
   if(sheetReturn&&sheetReturn.isConnected)sheetReturn.focus();
   sheetReturn=null;
 }
+/* Bouton retour en haut */
+window.addEventListener('scroll',()=>{
+  const b=$('#totop');if(b)b.classList.toggle('show',window.scrollY>120);
+},{passive:true});
+$('#totop')?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 document.addEventListener('keydown',e=>{
   const s=$('#sheet');
   if(!s.classList.contains('open'))return;
@@ -256,7 +266,7 @@ function blank(){
   return {
     v:3,created:ymd(),onboarded:false,
     profile:{prenom:'',devise:'€',revenusMensuels:0,objectifEpargne:0},
-    transactions:[],recurrents:[],epargneDepots:[],importReleve:[],analyseDemo:false,
+    transactions:[],recurrents:[],epargneDepots:[],importReleve:[],
     settings:{theme:'dark',ac:'#D4A94E'}
   };
 }
@@ -297,7 +307,6 @@ function sanitizeData(o){
     note:String(x.note??'').slice(0,200).replace(/[<>"`]/g,'')
   })).slice(0,5000):[];
   /* Import Revolut : conservé à travers les rechargements */
-  d.analyseDemo=Boolean(o.analyseDemo);
   d.importReleve=Array.isArray(o.importReleve)?o.importReleve.filter(x=>x&&typeof x==='object').map(x=>({
     date:/^\d{4}-\d{2}-\d{2}$/.test(x.date)?x.date:ymd(),
     desc:String(x.desc??'').slice(0,200).replace(/[<>"`]/g,''),
@@ -708,48 +717,6 @@ const REGLES_CAT=[
   [/virement|transfer|à partir de|à .* compte|moi bourso/i,'Virement']
 ];
 let ANALYSE_PERIODE='tout',ANALYSE_MOIS=null;
-const RELEVE_MOIS={
-'2025-04':{cats:[{nom:'Pari/Jieux',montant:295.0},{nom:'Virement',montant:137.45},{nom:'Shopping',montant:62.52},{nom:'Nourriture',montant:11.07}],total:506.04},
-'2025-05':{cats:[{nom:'Autre',montant:79.33},{nom:'Pari/Jieux',montant:52.0},{nom:'Shopping',montant:36.67},{nom:'Virement',montant:30.87}],total:198.87},
-'2025-07':{cats:[{nom:'Virement',montant:342.0}],total:342.0},
-'2025-08':{cats:[{nom:'Virement',montant:1850.06}],total:1850.06},
-'2025-09':{cats:[{nom:'Virement',montant:965.79},{nom:'Autre',montant:66.8},{nom:'Shopping',montant:22.03},{nom:'Nourriture',montant:20.85}],total:1075.47},
-'2025-10':{cats:[{nom:'Virement',montant:1600.46},{nom:'Autre',montant:182.0},{nom:'Nourriture',montant:61.52},{nom:'Shopping',montant:39.8}],total:1883.78},
-'2025-11':{cats:[{nom:'Virement',montant:309.0},{nom:'Autre',montant:50.0},{nom:'Nourriture',montant:45.85}],total:404.85},
-'2025-12':{cats:[{nom:'Virement',montant:1423.68},{nom:'Autre',montant:118.77},{nom:'Pari/Jieux',montant:111.95},{nom:'Nourriture',montant:36.79},{nom:'Shopping',montant:12.98},{nom:'Transport',montant:8.99}],total:1713.16},
-'2026-01':{cats:[{nom:'Virement',montant:308.0},{nom:'Autre',montant:102.48},{nom:'Pari/Jieux',montant:80.4},{nom:'Nourriture',montant:73.78}],total:564.66},
-'2026-02':{cats:[{nom:'Virement',montant:963.62},{nom:'Pari/Jieux',montant:188.6},{nom:'Nourriture',montant:88.49},{nom:'Autre',montant:45.5}],total:1286.21},
-'2026-03':{cats:[{nom:'Virement',montant:1728.8},{nom:'Autre',montant:112.4},{nom:'Nourriture',montant:42.3},{nom:'Pari/Jieux',montant:19.8}],total:1903.3},
-'2026-04':{cats:[{nom:'Virement',montant:2119.77},{nom:'Nourriture',montant:134.05},{nom:'Pari/Jieux',montant:122.7},{nom:'Autre',montant:108.6},{nom:'Shopping',montant:49.99},{nom:'Transport',montant:43.89}],total:2579.0},
-'2026-05':{cats:[{nom:'Virement',montant:6364.0},{nom:'Pari/Jieux',montant:472.8},{nom:'Autre',montant:348.81},{nom:'Nourriture',montant:134.05},{nom:'Shopping',montant:55.33},{nom:'Transport',montant:25.4}],total:7400.39},
-'2026-06':{cats:[{nom:'Virement',montant:5514.0},{nom:'Autre',montant:293.67},{nom:'Nourriture',montant:84.87}],total:5892.54},
-'2026-07':{cats:[{nom:'Virement',montant:3288.24},{nom:'Nourriture',montant:108.71},{nom:'Autre',montant:99.5},{nom:'Shopping',montant:20.3},{nom:'Pari/Jieux',montant:19.8}],total:3536.55},
-'2026-08':{cats:[{nom:'Virement',montant:1563.6},{nom:'Autre',montant:294.34},{nom:'Nourriture',montant:67.89},{nom:'Pari/Jieux',montant:19.8},{nom:'Transport',montant:14.14}],total:1959.77},
-'2026-09':{cats:[{nom:'Autre',montant:340.53},{nom:'Nourriture',montant:247.91},{nom:'Pari/Jieux',montant:30.0},{nom:'Shopping',montant:12.99},{nom:'Abonnements',montant:12.14},{nom:'Virement',montant:1.0}],total:644.57},
-'2026-10':{cats:[{nom:'Virement',montant:1186.0},{nom:'Autre',montant:212.09},{nom:'Nourriture',montant:129.59},{nom:'Shopping',montant:69.98},{nom:'Pari/Jieux',montant:50.9},{nom:'Santé',montant:23.81}],total:1672.37},
-'2026-11':{cats:[{nom:'Virement',montant:372.0},{nom:'Autre',montant:128.8},{nom:'Pari/Jieux',montant:31.6},{nom:'Nourriture',montant:7.86}],total:540.26}
-};
-const MARCHANDS_MOIS={
-'2025-04':[{nom:'SPS Betting France',montant:295.0,nb:25},{nom:'Virement : À EUR Compte boosté',montant:100.0,nb:3},{nom:'ASOS',montant:62.52,nb:1},{nom:'Virement : Virement à : Samir Ahmed Ali',montant:30.0,nb:1},{nom:'Uber Eats',montant:11.07,nb:1},{nom:'Virement : To Moi Bourso',montant:4.0,nb:2},{nom:'Virement : Transfer to Revolut Digital Assets',montant:3.45,nb:4}],
-'2025-05':[{nom:'Betclic',montant:52.0,nb:5},{nom:'To Xs P',montant:50.0,nb:1},{nom:'CNfans',montant:36.67,nb:1},{nom:'Moonpay*shufflecom 4031',montant:20.0,nb:1},{nom:'Virement : To Moi Bourso',montant:19.87,nb:2},{nom:'Virement : À EUR Compte boosté',montant:11.0,nb:1},{nom:'GameBoost',montant:9.33,nb:1}],
-'2025-07':[{nom:'Virement : To Darius Timofte',montant:192.0,nb:1},{nom:'Virement : Virement à : Samir Ladif',montant:135.0,nb:2},{nom:'Virement : To Moi Bourso',montant:15.0,nb:1}],
-'2025-08':[{nom:'Virement : To Zara Ahmed Ali',montant:800.0,nb:2},{nom:'Virement : To Moi Bourso',montant:796.92,nb:2},{nom:'Virement : À EUR Compte boosté',montant:225.0,nb:1},{nom:'Virement : To Samir Deb',montant:28.14,nb:1}],
-'2025-09':[{nom:'Virement : To Darius Timofte',montant:757.55,nb:11},{nom:'Virement : À EUR Compte boosté',montant:208.24,nb:7},{nom:'Pacific Group',montant:26.9,nb:1},{nom:'Temu',montant:22.03,nb:2},{nom:'Chez Chen',montant:15.6,nb:2},{nom:'GOMU',montant:12.9,nb:1},{nom:'Mya O Tacos',montant:11.4,nb:1},{nom:'Lidl',montant:11.01,nb:6},{nom:'McDonald\'s',montant:6.0,nb:1},{nom:'Intermarché',montant:3.84,nb:1}],
-'2025-10':[{nom:'Virement : To Darius Timofte',montant:1059.1,nb:23},{nom:'Virement : À EUR Compte boosté',montant:541.36,nb:3},{nom:'Parc Astérix',montant:102.0,nb:2},{nom:'McDonald\'s',montant:41.75,nb:5},{nom:'Le Delice',montant:28.9,nb:2},{nom:'Decathlon',montant:26.99,nb:1},{nom:'Lidl',montant:16.83,nb:9},{nom:'Chez Chen',montant:15.6,nb:2},{nom:'Naan\'s chicken',montant:11.5,nb:1},{nom:'Anamour',montant:11.0,nb:1},{nom:'Fnac',montant:6.6,nb:1},{nom:'Temu',montant:6.21,nb:1},{nom:'Azkkane Lahcen',montant:5.9,nb:1},{nom:'Snainate',montant:3.6,nb:1},{nom:'Epicerie Bazin',montant:3.5,nb:1},{nom:'Intermarché',montant:2.94,nb:2}],
-'2025-11':[{nom:'Virement : To Zara Ahmed Ali',montant:307.0,nb:2},{nom:'Le Delice',montant:26.0,nb:1},{nom:'Lidl',montant:22.81,nb:9},{nom:'McDonald\'s',montant:12.0,nb:1},{nom:'O\'Tacos',montant:11.4,nb:1},{nom:'Pasta',montant:11.1,nb:1},{nom:'Kfc',montant:7.2,nb:1},{nom:'Monoprix',montant:3.84,nb:1},{nom:'Virement : To Samir Deb',montant:2.0,nb:1},{nom:'Market',montant:1.5,nb:1}],
-'2025-12':[{nom:'Virement : À EUR Compte boosté',montant:1257.19,nb:3},{nom:'Virement : To Samir Deb',montant:116.5,nb:8},{nom:'Betclic',montant:60.0,nb:1},{nom:'Virement : Virement à : DARIUS MICHAEL',montant:49.99,nb:2},{nom:'Roue de Paris',montant:40.0,nb:1},{nom:'Popeyes',montant:26.97,nb:2},{nom:'Bocamexa',montant:23.0,nb:1},{nom:'O\'Tacos',montant:22.5,nb:2},{nom:'McDonald\'s',montant:15.93,nb:2},{nom:'Elda Rose',montant:15.0,nb:1},{nom:'Lidl',montant:13.85,nb:5},{nom:'Amazon',montant:12.98,nb:1},{nom:'Luks Paris 8',montant:11.95,nb:1},{nom:'Plaisir Mall',montant:9.8,nb:1},{nom:'PlayStation',montant:8.99,nb:1},{nom:'Le Delice',montant:8.5,nb:1},{nom:'Factory SQY',montant:8.0,nb:1},{nom:'Monoprix',montant:5.29,nb:1},{nom:'Fun Day Loges',montant:5.0,nb:1},{nom:'ALDI',montant:1.72,nb:1}],
-'2026-01':[{nom:'Virement : To Zara Ahmed Ali',montant:200.0,nb:1},{nom:'Virement : To Samir Deb',montant:100.0,nb:6},{nom:'Pathé',montant:48.8,nb:2},{nom:'Lidl',montant:35.91,nb:8},{nom:'UGC Ciné',montant:31.6,nb:2},{nom:'Golden Fried Chicken',montant:22.5,nb:2},{nom:'Le Delice',montant:20.8,nb:1},{nom:'Kfc',montant:19.45,nb:1},{nom:'Billetweb',montant:16.43,nb:1},{nom:'Elda Rose',montant:15.0,nb:1},{nom:'La Petite Gaïa',montant:14.85,nb:3},{nom:'Food78',montant:12.9,nb:1},{nom:'McDonald\'s',montant:10.6,nb:1},{nom:'Virement : Virement à : LUCAS CHAZOT',montant:8.0,nb:1},{nom:'Carrefour',montant:5.32,nb:1},{nom:'Monoprix',montant:2.5,nb:1}],
-'2026-02':[{nom:'Virement : Virement à : DARIUS MICHAEL',montant:912.62,nb:11},{nom:'UGC Ciné',montant:118.8,nb:6},{nom:'McDonald\'s',montant:57.66,nb:5},{nom:'Pathé',montant:48.8,nb:2},{nom:'Virement : To Samir Deb',montant:31.0,nb:4},{nom:'Linas Interieur',montant:21.4,nb:1},{nom:'Otacos Paris 14',montant:21.0,nb:1},{nom:'Virement : Virement à : LUCAS CHAZOT',montant:20.0,nb:1},{nom:'Monoprix',montant:19.45,nb:1},{nom:'O\'Tacos',montant:14.1,nb:1},{nom:'Lidl',montant:11.38,nb:3},{nom:'Salon International de l\'Agriculture',montant:10.0,nb:1}],
-'2026-03':[{nom:'Virement : Virement à : DARIUS MICHAEL',montant:1247.0,nb:23},{nom:'Virement : To Zara Ahmed Ali',montant:400.0,nb:1},{nom:'Virement : À EUR Compte boosté',montant:61.8,nb:1},{nom:'Le Delice',montant:36.0,nb:1},{nom:'Pacific Group',montant:28.9,nb:1},{nom:'Kfc',montant:21.25,nb:1},{nom:'Virement : To Samir Deb',montant:20.0,nb:1},{nom:'La Tête Dans les Nuages',montant:20.0,nb:1},{nom:'UGC Ciné',montant:19.8,nb:1},{nom:'Golden Fried Chicken',montant:17.5,nb:1},{nom:'Lidl',montant:11.25,nb:3},{nom:'O\'Tacos',montant:10.0,nb:1},{nom:'McDonald\'s',montant:9.8,nb:1}],
-'2026-04':[{nom:'Virement : Virement à : DARIUS MICHAEL',montant:1741.03,nb:18},{nom:'Virement : À EUR Compte boosté',montant:329.74,nb:1},{nom:'McDonald\'s',montant:84.2,nb:5},{nom:'Betclic',montant:55.0,nb:2},{nom:'Bershka',montant:49.99,nb:1},{nom:'Virement : To Samir Deb',montant:49.0,nb:5},{nom:'Voi',montant:31.99,nb:6},{nom:'UGC Ciné',montant:26.7,nb:2},{nom:'Pathé',montant:24.4,nb:1},{nom:'Elda Rose',montant:21.0,nb:1},{nom:'Restaurant Hdv',montant:18.4,nb:1},{nom:'To Imran C',montant:17.0,nb:1},{nom:'The Smoked Meat',montant:16.4,nb:1},{nom:'Black And White Burger',montant:15.9,nb:1},{nom:'IMG2',montant:12.5,nb:1},{nom:'La Defense',montant:12.05,nb:1},{nom:'Bolt',montant:11.9,nb:1},{nom:'Le Delice',montant:10.9,nb:1},{nom:'Chez Chen',montant:9.8,nb:1},{nom:'Papou Juice Bar',montant:8.95,nb:1},{nom:'Paris72 Comptoir',montant:8.6,nb:1},{nom:'Aquarium de Paris',montant:8.0,nb:1},{nom:'Monoprix',montant:7.34,nb:1},{nom:'Franprix',montant:4.8,nb:1},{nom:'Carrefour',montant:3.41,nb:1}],
-'2026-05':[{nom:'Virement : Virement à : DARIUS MICHAEL',montant:5006.0,nb:19},{nom:'Virement : To Zara Ahmed Ali',montant:698.0,nb:3},{nom:'Virement : À EUR Compte boosté',montant:550.0,nb:3},{nom:'FDJ',montant:453.0,nb:5},{nom:'Suspendu',montant:281.29,nb:1},{nom:'Virement : To Samir Deb',montant:110.0,nb:2},{nom:'McDonald\'s',montant:55.91,nb:5},{nom:'Sushi et Moi',montant:41.8,nb:1},{nom:'Temu',montant:27.83,nb:2},{nom:'Shein',montant:27.5,nb:1},{nom:'Bolt',montant:25.4,nb:2},{nom:'UGC Ciné',montant:19.8,nb:1},{nom:'Kfc',montant:19.45,nb:1},{nom:'Boulangerie',montant:16.75,nb:2},{nom:'Restaurant Hdv',montant:16.5,nb:1},{nom:'Black And White Burger',montant:13.05,nb:1},{nom:'Tera',montant:11.1,nb:1},{nom:'Kavirna Kalanjiy',montant:8.9,nb:1},{nom:'Magasin U',montant:5.72,nb:1},{nom:'Burger King',montant:5.0,nb:1},{nom:'Carrefour',montant:4.74,nb:1},{nom:'Lidl',montant:2.65,nb:1}],
-'2026-06':[{nom:'Virement : Virement à : Voiture J',montant:5000.0,nb:1},{nom:'Virement : Virement à : DARIUS MICHAEL',montant:454.0,nb:5},{nom:'Kensho',montant:79.8,nb:1},{nom:'Virement : To Zara Ahmed Ali',montant:60.0,nb:2},{nom:'McDonald\'s',montant:51.13,nb:3},{nom:'O\'Sullivans',montant:40.0,nb:1},{nom:'Hd12',montant:40.0,nb:1},{nom:'La Tête Dans les Nuages',montant:30.0,nb:2},{nom:'Le Gateau Dore Fiesta',montant:30.0,nb:1},{nom:'Monoprix',montant:28.23,nb:6},{nom:'O\'Tacos',montant:25.9,nb:1},{nom:'Groupon',montant:23.98,nb:1},{nom:'Elda Rose',montant:18.0,nb:1},{nom:'Belhcen Abdell',montant:5.0,nb:1},{nom:'Lidl',montant:2.95,nb:1},{nom:'Carrefour',montant:2.56,nb:1},{nom:'Apple',montant:0.99,nb:1}],
-'2026-07':[{nom:'Virement : À EUR Compte boosté',montant:1769.51,nb:9},{nom:'Virement : Virement à : DARIUS MICHAEL',montant:718.73,nb:13},{nom:'Virement : To Zara Ahmed Ali',montant:622.0,nb:2},{nom:'Virement : Virement à : Papa Ahmed ali',montant:100.0,nb:1},{nom:'McDonald\'s',montant:58.68,nb:4},{nom:'Virement : Virement à : Milan Caca',montant:50.0,nb:1},{nom:'Sushi et Moi',montant:41.8,nb:1},{nom:'Monoprix',montant:37.97,nb:3},{nom:'Le Delice',montant:28.8,nb:3},{nom:'Virement : Transfer to Revolut Digital Assets',montant:28.0,nb:1},{nom:'Decathlon',montant:19.99,nb:1},{nom:'UGC Ciné',montant:19.8,nb:1},{nom:'Swile',montant:16.8,nb:1},{nom:'King Food',montant:12.1,nb:2},{nom:'Lidl',montant:7.51,nb:1},{nom:'Uber Eats',montant:4.55,nb:1},{nom:'Temu',montant:0.31,nb:1}],
-'2026-08':[{nom:'Virement : À EUR Compte boosté',montant:693.6,nb:2},{nom:'Virement : Virement à : DARIUS MICHAEL',montant:470.0,nb:10},{nom:'Virement : To Zara Ahmed Ali',montant:400.0,nb:1},{nom:'Wok Grill',montant:51.8,nb:1},{nom:'Saveur Asie',montant:41.8,nb:1},{nom:'Akemi',montant:41.8,nb:1},{nom:'La Tête Dans les Nuages',montant:40.0,nb:2},{nom:'La Kazdalerie',montant:28.8,nb:1},{nom:'Kfc',montant:22.15,nb:1},{nom:'O\'Tacos',montant:21.9,nb:1},{nom:'UGC Ciné',montant:19.8,nb:1},{nom:'Restaurant Hdv',montant:16.5,nb:1},{nom:'To Xs Dollars',montant:16.0,nb:1},{nom:'Eat Chicken',montant:15.9,nb:1},{nom:'Lidl',montant:15.65,nb:2},{nom:'Voi',montant:14.14,nb:1},{nom:'King Jouet',montant:13.99,nb:1},{nom:'McDonald\'s',montant:13.59,nb:1},{nom:'Tera',montant:10.4,nb:1},{nom:'Ses48851hopchevilly',montant:6.45,nb:1},{nom:'Normal',montant:5.5,nb:1}],
-'2026-09':[{nom:'McDonald\'s',montant:139.91,nb:8},{nom:'Akemi',montant:77.6,nb:2},{nom:'Sur la Pocket EUR Économies',montant:58.0,nb:1},{nom:'Black Angus',montant:47.3,nb:1},{nom:'Chez Chen',montant:46.8,nb:6},{nom:'NACHOS',montant:31.3,nb:1},{nom:'Gaumont',montant:30.0,nb:1},{nom:'Uber Eats',montant:29.9,nb:1},{nom:'Burger King',montant:28.8,nb:2},{nom:'Apple',montant:23.98,nb:3},{nom:'Elda Rose',montant:21.0,nb:1},{nom:'Monoprix',montant:17.69,nb:2},{nom:'Restaurant Hdv',montant:17.4,nb:1},{nom:'Le Delice',montant:15.9,nb:2},{nom:'Spotify',montant:12.14,nb:1},{nom:'Arkose',montant:10.0,nb:1},{nom:'Decathlon',montant:9.99,nb:1},{nom:'Lidl',montant:8.67,nb:4},{nom:'Häagen Dazs',montant:6.9,nb:1},{nom:'Carrefour',montant:5.54,nb:1},{nom:'Fnac',montant:3.0,nb:1},{nom:'Auchan',montant:1.75,nb:1},{nom:'Virement : Virement à : KALIXTA MARIE',montant:1.0,nb:1}],
-'2026-10':[{nom:'Virement : To Samir Deb',montant:746.0,nb:2},{nom:'Virement : To Zara Ahmed Ali',montant:440.0,nb:1},{nom:'McDonald\'s',montant:100.61,nb:6},{nom:'Fnac',montant:69.98,nb:2},{nom:'Parc Astérix',montant:53.0,nb:1},{nom:'FDJ',montant:45.0,nb:2},{nom:'Samah Livry',montant:38.5,nb:1},{nom:'Fever Le Parc De Letr',montant:28.9,nb:1},{nom:'Touilson And Ko',montant:26.8,nb:1},{nom:'Nutripure',montant:23.81,nb:1},{nom:'O\'Tacos',montant:20.4,nb:1},{nom:'Elda Rose',montant:15.0,nb:1},{nom:'Golden Fried Chicken',montant:11.5,nb:1},{nom:'ALDI',montant:11.13,nb:1},{nom:'Istanbul',montant:9.0,nb:1},{nom:'Keolis',montant:8.0,nb:1},{nom:'UGC Ciné',montant:5.9,nb:1},{nom:'Lidl',montant:5.85,nb:2},{nom:'Monoprix',montant:4.95,nb:1},{nom:'Boulangerie',montant:3.6,nb:2},{nom:'Carrefour',montant:3.45,nb:1},{nom:'Apple',montant:0.99,nb:1}],
-'2026-11':[{nom:'Virement : To Zara Ahmed Ali',montant:240.0,nb:3},{nom:'Virement : Virement à : DARIUS MICHAEL',montant:102.0,nb:2},{nom:'Akemi',montant:43.8,nb:1},{nom:'Grill\'inn',montant:39.8,nb:1},{nom:'Pathé',montant:31.6,nb:2},{nom:'Virement : Virement à : MOHAMED-AMINE',montant:30.0,nb:1},{nom:'Chez Chen',montant:23.4,nb:2},{nom:'Factory SQY',montant:16.0,nb:2},{nom:'Sushi et Moi',montant:5.8,nb:1},{nom:'Boulangerie',montant:3.3,nb:1},{nom:'Monoprix',montant:2.5,nb:1},{nom:'Lidl',montant:2.06,nb:1}]
-};
 /* Filtre de période : tout / mois courant / mois choisi / semestre (6 mois glissants) / 30j */
 function dansPeriode(date){
   const p=ANALYSE_PERIODE;
@@ -766,148 +733,9 @@ function moisAnalyse(){
   const set=new Set();
   for(const t of D.transactions)set.add(t.date.slice(0,7));
   for(const t of (D.importReleve||[]))if(t.date)set.add(t.date.slice(0,7));
-  if(D.analyseDemo&&typeof RELEVE_MOIS!=='undefined')for(const m of Object.keys(RELEVE_MOIS))set.add(m);
   set.add(moisCourant());
   return [...set].sort().reverse();
 }
-/* Données réelles extraites du relevé Revolut de Ilane (01/04/2025 → 25/11/2026) */
-const RELEVE_DEMO={
-  totalEntrees:35962.79,totalDepensesReelles:35953.85,nbOperations:950,nbDepensesReelles:627,
-  cats:[
-    {nom:'Virement',montant:30068.34,pct:83.6},
-    {nom:'Autre',montant:2583.62,pct:7.2},
-    {nom:'Pari/Jieux',montant:1495.35,pct:4.2},
-    {nom:'Nourriture',montant:1295.58,pct:3.6},
-    {nom:'Shopping',montant:382.59,pct:1.1},
-    {nom:'Transport',montant:92.42,pct:0.3},
-    {nom:'Santé',montant:23.81,pct:0.1},
-    {nom:'Abonnements',montant:12.14,pct:0.0}
-  ],
-  topMarchands:[
-    {nom:'Virement : Virement à : DARIUS MICHAEL',montant:10701.37,nb:103},
-    {nom:'Virement : À EUR Compte boosté',montant:5747.44,nb:34},
-    {nom:'Virement : Virement à : Voiture J',montant:5000.0,nb:1},
-    {nom:'Virement : To Zara Ahmed Ali',montant:4167.0,nb:18},
-    {nom:'Virement : To Darius Timofte',montant:2008.65,nb:35},
-    {nom:'Virement : To Samir Deb',montant:1202.64,nb:30},
-    {nom:'Virement : To Moi Bourso',montant:835.79,nb:7},
-    {nom:'McDonald\'s',montant:657.77,nb:48},
-    {nom:'FDJ',montant:498.0,nb:7},
-    {nom:'SPS Betting France',montant:295.0,nb:25},
-    {nom:'Suspendu',montant:281.29,nb:1},
-    {nom:'UGC Ciné',montant:262.2,nb:15},
-    {nom:'Le Delice',montant:175.8,nb:12},
-    {nom:'Lidl',montant:168.38,nb:55},
-    {nom:'Betclic',montant:167.0,nb:8},
-    {nom:'Akemi',montant:163.2,nb:4},
-    {nom:'Parc Astérix',montant:155.0,nb:3},
-    {nom:'Pathé',montant:153.6,nb:7},
-    {nom:'Virement : Virement à : Samir Ladif',montant:135.0,nb:2},
-    {nom:'Monoprix',montant:129.76,nb:18},
-    {nom:'O\'Tacos',montant:126.2,nb:8},
-    {nom:'Chez Chen',montant:111.2,nb:13},
-    {nom:'Elda Rose',montant:105.0,nb:6},
-    {nom:'Virement : Virement à : Papa Ahmed ali',montant:100.0,nb:1},
-    {nom:'La Tête Dans les Nuages',montant:90.0,nb:5},
-    {nom:'Kfc',montant:89.5,nb:5},
-    {nom:'Sushi et Moi',montant:89.4,nb:3},
-    {nom:'Kensho',montant:79.8,nb:1},
-    {nom:'Fnac',montant:79.58,nb:4},
-    {nom:'Restaurant Hdv',montant:68.8,nb:4},
-    {nom:'ASOS',montant:62.52,nb:1},
-    {nom:'Sur la Pocket EUR Économies',montant:58.0,nb:1},
-    {nom:'Decathlon',montant:56.97,nb:3},
-    {nom:'Temu',montant:56.38,nb:6},
-    {nom:'Pacific Group',montant:55.8,nb:2},
-    {nom:'Wok Grill',montant:51.8,nb:1},
-    {nom:'Golden Fried Chicken',montant:51.5,nb:4},
-    {nom:'To Xs P',montant:50.0,nb:1},
-    {nom:'Virement : Virement à : Milan Caca',montant:50.0,nb:1},
-    {nom:'Bershka',montant:49.99,nb:1},
-    {nom:'Black Angus',montant:47.3,nb:1},
-    {nom:'Voi',montant:46.13,nb:7},
-    {nom:'Uber Eats',montant:45.52,nb:3},
-    {nom:'Saveur Asie',montant:41.8,nb:1},
-    {nom:'Roue de Paris',montant:40.0,nb:1},
-    {nom:'O\'Sullivans',montant:40.0,nb:1},
-    {nom:'Hd12',montant:40.0,nb:1},
-    {nom:'Grill\'inn',montant:39.8,nb:1},
-    {nom:'Samah Livry',montant:38.5,nb:1},
-    {nom:'Bolt',montant:37.3,nb:3},
-    {nom:'CNfans',montant:36.67,nb:1},
-    {nom:'Burger King',montant:33.8,nb:3},
-    {nom:'Virement : Transfer to Revolut Digital Assets',montant:31.45,nb:5},
-    {nom:'NACHOS',montant:31.3,nb:1},
-    {nom:'Virement : Virement à : Samir Ahmed Ali',montant:30.0,nb:1},
-    {nom:'Le Gateau Dore Fiesta',montant:30.0,nb:1},
-    {nom:'Gaumont',montant:30.0,nb:1},
-    {nom:'Virement : Virement à : MOHAMED-AMINE',montant:30.0,nb:1},
-    {nom:'Black And White Burger',montant:28.95,nb:2},
-    {nom:'Fever Le Parc De Letr',montant:28.9,nb:1},
-    {nom:'La Kazdalerie',montant:28.8,nb:1},
-    {nom:'Virement : Virement à : LUCAS CHAZOT',montant:28.0,nb:2},
-    {nom:'Shein',montant:27.5,nb:1},
-    {nom:'Popeyes',montant:26.97,nb:2},
-    {nom:'Touilson And Ko',montant:26.8,nb:1},
-    {nom:'Apple',montant:25.96,nb:5},
-    {nom:'Carrefour',montant:25.02,nb:6},
-    {nom:'Factory SQY',montant:24.0,nb:3},
-    {nom:'Groupon',montant:23.98,nb:1},
-    {nom:'Nutripure',montant:23.81,nb:1},
-    {nom:'Boulangerie',montant:23.65,nb:5},
-    {nom:'Bocamexa',montant:23.0,nb:1},
-    {nom:'Tera',montant:21.5,nb:2},
-    {nom:'Linas Interieur',montant:21.4,nb:1},
-    {nom:'Otacos Paris 14',montant:21.0,nb:1},
-    {nom:'Moonpay*shufflecom 4031',montant:20.0,nb:1},
-    {nom:'To Imran C',montant:17.0,nb:1},
-    {nom:'Swile',montant:16.8,nb:1},
-    {nom:'Billetweb',montant:16.43,nb:1},
-    {nom:'The Smoked Meat',montant:16.4,nb:1},
-    {nom:'To Xs Dollars',montant:16.0,nb:1},
-    {nom:'Eat Chicken',montant:15.9,nb:1},
-    {nom:'La Petite Gaïa',montant:14.85,nb:3},
-    {nom:'King Jouet',montant:13.99,nb:1},
-    {nom:'Amazon',montant:12.98,nb:1},
-    {nom:'GOMU',montant:12.9,nb:1},
-    {nom:'Food78',montant:12.9,nb:1},
-    {nom:'ALDI',montant:12.85,nb:2},
-    {nom:'IMG2',montant:12.5,nb:1},
-    {nom:'Spotify',montant:12.14,nb:1},
-    {nom:'King Food',montant:12.1,nb:2},
-    {nom:'La Defense',montant:12.05,nb:1},
-    {nom:'Luks Paris 8',montant:11.95,nb:1},
-    {nom:'Naan\'s chicken',montant:11.5,nb:1},
-    {nom:'Mya O Tacos',montant:11.4,nb:1},
-    {nom:'Pasta',montant:11.1,nb:1},
-    {nom:'Anamour',montant:11.0,nb:1},
-    {nom:'Salon International de l\'Agriculture',montant:10.0,nb:1},
-    {nom:'Arkose',montant:10.0,nb:1},
-    {nom:'Plaisir Mall',montant:9.8,nb:1},
-    {nom:'GameBoost',montant:9.33,nb:1},
-    {nom:'Istanbul',montant:9.0,nb:1},
-    {nom:'PlayStation',montant:8.99,nb:1},
-    {nom:'Papou Juice Bar',montant:8.95,nb:1},
-    {nom:'Kavirna Kalanjiy',montant:8.9,nb:1},
-    {nom:'Paris72 Comptoir',montant:8.6,nb:1},
-    {nom:'Aquarium de Paris',montant:8.0,nb:1},
-    {nom:'Keolis',montant:8.0,nb:1},
-    {nom:'Häagen Dazs',montant:6.9,nb:1},
-    {nom:'Intermarché',montant:6.78,nb:3},
-    {nom:'Ses48851hopchevilly',montant:6.45,nb:1},
-    {nom:'Azkkane Lahcen',montant:5.9,nb:1},
-    {nom:'Magasin U',montant:5.72,nb:1},
-    {nom:'Normal',montant:5.5,nb:1},
-    {nom:'Fun Day Loges',montant:5.0,nb:1},
-    {nom:'Belhcen Abdell',montant:5.0,nb:1},
-    {nom:'Franprix',montant:4.8,nb:1},
-    {nom:'Snainate',montant:3.6,nb:1},
-    {nom:'Epicerie Bazin',montant:3.5,nb:1},
-    {nom:'Auchan',montant:1.75,nb:1},
-    {nom:'Market',montant:1.5,nb:1},
-    {nom:'Virement : Virement à : KALIXTA MARIE',montant:1.0,nb:1}
-  ]
-};
 function categoriser(desc){
   const d=String(desc||'');
   for(const [re,cat] of REGLES_CAT)if(re.test(d))return cat;
@@ -953,33 +781,9 @@ function donutSVG(cats,total){
     <text x="100" y="118" text-anchor="middle" class="donut-sub">${devise()} dépensés</text>
   </svg>`;
 }
-/* Calcule les catégories de la démo selon la période choisie */
-function donneesDemoFiltrees(){
-  if(!D.analyseDemo||typeof RELEVE_MOIS==='undefined')return RELEVE_DEMO;
-  const map={};let total=0,nb=0;
-  const mois=moisAnalyse();
-  for(const m of mois){
-    if(!dansPeriode(m+'-01'))continue;
-    const d=RELEVE_MOIS[m];if(!d)continue;
-    for(const c of d.cats){map[c.nom]=(map[c.nom]||0)+c.montant;total+=c.montant;nb++;}
-  }
-  if(!total)return {cats:[],total:0,nbDepensesReelles:0,totalEntrees:0,nbOperations:0};
-  const cats=Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([nom,montant])=>({nom,montant,pct:Math.round(montant/total*1000)/10}));
-  return {cats,total,nbDepensesReelles:nb,totalEntrees:RELEVE_DEMO.totalEntrees,nbOperations:RELEVE_DEMO.nbOperations};
-}
 /* Marchands adaptés à la période choisie */
 function marchandsFiltres(){
   const map={};
-  if(D.analyseDemo&&typeof MARCHANDS_MOIS!=='undefined'){
-    for(const m of moisAnalyse()){
-      if(!dansPeriode(m+'-01'))continue;
-      const liste=MARCHANDS_MOIS[m];if(!liste)continue;
-      for(const x of liste){
-        if(!map[x.nom])map[x.nom]={nom:x.nom,montant:0,nb:0};
-        map[x.nom].montant+=x.montant;map[x.nom].nb+=x.nb;
-      }
-    }
-  }
   /* Transactions saisies dans l'appli */
   for(const t of D.transactions){
     if(t.type!=='depense'||!dansPeriode(t.date))continue;
@@ -1002,28 +806,25 @@ function marchandsFiltres(){
 function vueAnalyse(){
   const a=donneesAnalyse();
   const hasImport=(D.importReleve||[]).length>0;
-  const demo=D.analyseDemo?donneesDemoFiltrees():null;
   return `<h1 class="page wrap">Analyse</h1>
   <p class="sub wrap">Ton argent, catégorisé automatiquement.</p>
   <div class="wrap">
-    ${!demo?`<button class="btn ghost block" id="demo-load" style="margin-bottom:14px">📄 Charger mon relevé Revolut (démo)</button>`:`<div class="card tight"><div class="row between"><span><b>Relevé Revolut</b> · ${demo.nbOperations} opérations · 01/04/2025 → 25/11/2026</span><button class="btn ghost sm" id="demo-clear">Retirer</button></div></div>`}
     <div class="period" role="group" aria-label="Période">
       ${[['tout','Tout'],['semestre','Semestre'],['mois','Ce mois'],['mois-choisi','Mois'],['30j','30 jours']].map(([v,l])=>`<button data-periode="${v}" class="${ANALYSE_PERIODE===v?'on':''}">${l}</button>`).join('')}
     </div>
     ${ANALYSE_PERIODE==='mois-choisi'?`<label class="f">Choisir un mois</label><select class="f" id="analyse-mois" aria-label="Choisir un mois">${moisAnalyse().map(m=>`<option value="${m}" ${m===(ANALYSE_MOIS||moisCourant())?'selected':''}>${nomMois(m)}</option>`).join('')}</select>`:''}
     ${ANALYSE_PERIODE==='semestre'?`<div class="hint" style="margin-bottom:12px">6 derniers mois : ${fmtDate(dayAdd(ymd(),-182))} → ${fmtDate(ymd())}</div>`:''}
-    ${((demo&&demo.cats&&demo.cats.length)||a.nb)?`
+    ${a.nb?`
       <div class="card">
-        <div class="sec-title"><span><span class="em">🥧</span> Répartition des dépenses</span><span class="tiny muted">${demo?demo.nbDepensesReelles+' vraies dépenses':a.nb+' opérations'}</span></div>
+        <div class="sec-title"><span><span class="em">🥧</span> Répartition des dépenses</span><span class="tiny muted">${a.nb} opérations</span></div>
         <div class="donut-wrap">
-          ${donutSVG(demo?demo.cats.map(c=>({...c,couleur:CAT_COULEURS[c.nom]||'#8B877E'})):a.cats,demo?(demo.total||demo.totalDepensesReelles||0):a.total)}
-          <div class="legend">${(demo?demo.cats:a.cats).map(c=>`<div class="legend-row">
-            <span class="dot" style="background:${demo?(CAT_COULEURS[c.nom]||'#8B877E'):c.couleur}"></span>
+          ${donutSVG(a.cats,a.total)}
+          <div class="legend">${a.cats.map(c=>`<div class="legend-row">
+            <span class="dot" style="background:${c.couleur}"></span>
             <span class="nm">${esc(c.nom)}</span>
             <span class="vals"><span class="pc">${c.pct}%</span><span class="am">${fmtNum(c.montant)} ${devise()}</span></span>
           </div>`).join('')}</div>
         </div>
-        ${demo?`<div class="tiny muted" style="margin-top:10px">Entrées totales : <b class="ok">${fmtNum(demo.totalEntrees)} ${devise()}</b> · Virements inclus dans le camembert</div>`:''}
       </div>
       ${(()=>{const march=marchandsFiltres();return march.length?`<div class="card">
         <div class="sec-title"><span><span class="em">🏪</span> Tous tes marchands</span><span class="tiny muted">${march.length} commerçants</span></div>
@@ -1116,8 +917,6 @@ async function importerFichier(fichier){
   }catch(e){toast('Impossible de lire ce fichier');}
 }
 function bindAnalyse(){
-  $('#demo-load')?.addEventListener('click',()=>{D.analyseDemo=true;save();render();toast('Relevé Revolut chargé')});
-  $('#demo-clear')?.addEventListener('click',()=>{D.analyseDemo=false;save();render()});
   $$('[data-periode]').forEach(b=>b.addEventListener('click',()=>{ANALYSE_PERIODE=b.dataset.periode;render()}));
   $('#analyse-mois')?.addEventListener('change',e=>{ANALYSE_MOIS=e.target.value;render()});
   $('#drop-zone')?.addEventListener('click',()=>$('#file-releve')?.click());
