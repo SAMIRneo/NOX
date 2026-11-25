@@ -209,9 +209,9 @@ function closeSheet(){
 }
 /* Bouton retour en haut */
 window.addEventListener('scroll',()=>{
-  const b=$('#totop');if(b)b.classList.toggle('show',window.scrollY>120);
+  const b=document.getElementById('totop');if(b)b.classList.toggle('show',window.scrollY>120);
 },{passive:true});
-$('#totop')?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+document.getElementById('totop')?.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 document.addEventListener('keydown',e=>{
   const s=$('#sheet');
   if(!s.classList.contains('open'))return;
