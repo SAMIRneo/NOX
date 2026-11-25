@@ -45,7 +45,6 @@ header.top{position:sticky;top:0;z-index:40;background:var(--paper);border-botto
 .topin{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .topbtns{display:flex;gap:5px}
 @media (max-width:420px){.topbtns .icobtn{width:42px;height:42px;font-size:17px}.logo{font-size:18px}}
-@media (max-width:360px){#btn-analyse{display:none}}
 .logo{font:700 20px/1 var(--serif);letter-spacing:-.02em;display:flex;align-items:center;gap:6px}
 .logo span{color:var(--ac);font-style:italic}
 .icobtn{width:46px;height:46px;border-radius:6px;background:transparent;border:1px solid var(--line);display:grid;place-items:center;font-size:19px;position:relative;flex:none}
@@ -461,7 +460,6 @@ function render(){
 }
 function headerHTML(){
   return `<header class="top"><div class="topin wrap">
-    <a class="icobtn" href="https://samirneo.github.io/elan/" aria-label="Retour au Microcosme" title="Retour au Microcosme">←</a>
     <div class="logo"><img src="icon.svg" alt="" width="26" height="26" style="vertical-align:middle;margin-right:2px">NO<span>X</span></div>
     <div class="topbtns">
       <button class="icobtn" id="btn-analyse" aria-label="Analyse" title="Analyse">📊</button>
