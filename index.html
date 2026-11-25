@@ -43,18 +43,20 @@ h1,h2,h3,h4,p{margin:0}
 /* Header */
 header.top{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 0 10px}
 .topin{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.topbtns{display:flex;gap:8px}
+.topbtns{display:flex;gap:5px}
+@media (max-width:420px){.topbtns .icobtn{width:42px;height:42px;font-size:17px}.logo{font-size:18px}}
+@media (max-width:360px){#btn-analyse{display:none}}
 .logo{font:700 20px/1 var(--serif);letter-spacing:-.02em;display:flex;align-items:center;gap:6px}
 .logo span{color:var(--ac);font-style:italic}
-.icobtn{width:44px;height:44px;border-radius:6px;background:transparent;border:1px solid var(--line);display:grid;place-items:center;font-size:18px;position:relative}
+.icobtn{width:46px;height:46px;border-radius:6px;background:transparent;border:1px solid var(--line);display:grid;place-items:center;font-size:19px;position:relative;flex:none}
 .icobtn:active{transform:scale(.94)}
 h1.page{font:700 30px/1.1 var(--serif);letter-spacing:-.02em;margin:10px 0 2px}
 .sub{color:var(--mut);font-size:13px}
 /* Bottom nav — 5 onglets */
 nav#nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);border-top:1px solid var(--ink);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
 .navin{max-width:720px;margin:auto;display:flex;justify-content:space-around;align-items:stretch}
-.nb{flex:1;min-width:0;height:58px;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--dim);font-size:10px;font-weight:700}
-.nb i{font-style:normal;font-size:20px;line-height:1;font-family:var(--em)}
+.nb{flex:1;min-width:0;height:58px;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--dim);font-size:9px;font-weight:700;padding:0 1px}
+.nb i{font-style:normal;font-size:19px;line-height:1;font-family:var(--em)}
 .nb.on{color:var(--ac);background:var(--ac-soft)}
 .nb.add i{background:var(--ink);color:var(--paper);width:44px;height:44px;border-radius:4px;display:grid;place-items:center;font-size:26px;font-weight:400;margin-top:-14px;font-family:inherit}
 /* Sections papier : traits fins, pas d'ombres, serif pour les titres */
@@ -471,7 +473,7 @@ function headerHTML(){
 function navHTML(){
   const tabs=[
     ['accueil','🏠','Accueil'],['historique','📜','Historique'],['ajouter','➕','Ajouter'],
-    ['objectif','🎯','Objectif'],['profil','👤','Profil']
+    ['objectif','🎯','Objectif'],['analyse','📊','Analyse'],['profil','👤','Profil']
   ];
   return `<nav id="nav" aria-label="Navigation principale"><div class="navin">${tabs.map(([v,i,l])=>
     `<button class="nb ${VIEW===v?'on':''} ${v==='ajouter'?'add':''}" data-vue="${v}" aria-label="${l}" ${VIEW===v?'aria-current="page"':''}><i>${i}</i><span>${l}</span></button>`
